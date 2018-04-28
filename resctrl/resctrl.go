@@ -141,7 +141,9 @@ func (r *ResctrlFs) CacheInfo() {
 			}
 			file.Close()
 		}
+
 	}
+	r.Info = cacheInfoCollection
 }
 
 func (r *ResctrlFs) WkldAllocaCache(size int) int64 {

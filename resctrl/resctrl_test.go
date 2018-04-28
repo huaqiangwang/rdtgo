@@ -77,7 +77,7 @@ func TestBindTaskToGroup(t *testing.T) {
 		go cacheComsumer(5*1024, r)
 		go dumpCacheOccupency(group, r)
 	}
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
 	r.DestroyMonGroup(group)
 }
 
@@ -85,7 +85,8 @@ func TestResctrlFs_CacheInfo(t *testing.T) {
 	r, _ := resctrl.NewResctrlFs()
 	r.CacheInfo()
 	// dump information
+
 	for _, info := range r.Info {
-		fmt.Println(info.Res.Name, " = ", info.Value)
+		t.Log(info.Res.Name, " = ", info.Value)
 	}
 }
