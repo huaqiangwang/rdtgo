@@ -15,7 +15,6 @@ import (
 #include <stdio.h>
 
 unsigned long initCache(int size){
-	printf("Cache size is %d\n",size);
 	char * pc = (char*)malloc(size);
 	return (unsigned long)pc;
 }
@@ -38,8 +37,36 @@ void cacheLoop(unsigned long pl, int size){
 */
 import "C"
 
+const ResPath = "/sys/fs/resctrl"
+
+const (
+	RES_TYPE_VALUE int = iota
+	RES_TYPE_STRING
+)
+
+type resNameAndType struct {
+	Name string
+	Type int
+}
+
+type resourceInfo struct {
+	Res   resNameAndType
+	Value interface{}
+}
+
+var RdtInfo []resNameAndType = []resNameAndType{
+	{"L3/cbm_mask", RES_TYPE_STRING},
+	{"L3/min_cbm_bits", RES_TYPE_STRING},
+	{"L3/num_closids", RES_TYPE_VALUE},
+	{"L3/sharable_bits", RES_TYPE_VALUE},
+	{"L3_MON/max_threshold_occupancy", RES_TYPE_VALUE},
+	{"L3_MON/mon_features", RES_TYPE_STRING},
+	{"L3_MON/rmids", RES_TYPE_VALUE},
+}
+
 type ResctrlFs struct {
 	bMount bool
+	Info   []resourceInfo
 }
 
 func NewResctrlFs() (*ResctrlFs, error) {
@@ -70,7 +97,51 @@ func (r *ResctrlFs) CreateCacheQuota(
 // - cache way
 // - capacity per cache way
 func (r *ResctrlFs) CacheInfo() {
+	stat, err := os.Stat(ResPath)
+	if err != nil || !stat.IsDir() {
+		fmt.Println("No resctrl root folder, mount first")
+		return
+	}
 
+	cacheInfoCollection := make([]resourceInfo, len(RdtInfo))
+	for index, resName := range RdtInfo {
+		cacheInfoCollection[index].Res.Name = RdtInfo[index].Name
+		cacheInfoCollection[index].Res.Type = RdtInfo[index].Type
+		if RdtInfo[index].Type == RES_TYPE_STRING {
+			cacheInfoCollection[index].Value = "error"
+		} else {
+			cacheInfoCollection[index].Value = 0
+		}
+		//fmt.Println(ResPath + "/info/" + resName.Name)
+		if file, err := os.Open(ResPath + "/info/" + resName.Name); err == nil {
+			buf := make([]byte, 256)
+			if _, err := file.Read(buf); err != nil {
+				fmt.Println("Failed in getting info from ",
+					resName.Name,
+					": ", err.Error())
+
+				// TODO: using 'switch/case'
+				if resName.Type == RES_TYPE_STRING {
+					cacheInfoCollection[index].Value = "error"
+				} else {
+					cacheInfoCollection[index].Value = 0
+				}
+			} else {
+				//fmt.Println(buf)
+				if resName.Type == RES_TYPE_STRING {
+					cacheInfoCollection[index].Value = string(buf)
+				} else {
+					lines := strings.Split(string(buf), "\n")
+					if len(lines) > 0 {
+						// should only be valid for first line
+						cacheInfoCollection[index].Value, _ = strconv.ParseInt(lines[0], 10, 0)
+
+					}
+				}
+			}
+			file.Close()
+		}
+	}
 }
 
 func (r *ResctrlFs) WkldAllocaCache(size int) int64 {
@@ -101,8 +172,6 @@ func (r *ResctrlFs) WkldCache(occupancyKB int, delay time.Duration) bool {
 	r.WkldFreeCache(int64(addr))
 	return true
 }
-
-const ResPath = "/sys/fs/resctrl"
 
 func (r *ResctrlFs) CreateMONGroup(group string) bool {
 	folderName := ResPath + "/" + group
