@@ -233,6 +233,28 @@ func (r *ResctrlFs) CheckL3CacheOccupancy(group string) []int64 {
 	return occuL3
 }
 
+func (r *ResctrlFs) DumpFileContentInt(
+	strFolder string, strFile string, msg string)  error {
+
+	folderName := ResPath + "/" + strFolder
+	os.Chdir(folderName)
+
+	file, err := os.Open(strFile)
+	defer file.Close()
+
+	if err == nil {
+		buf := make([]byte, 256)
+		file.Read(buf)
+		if buf[0] == 0 {
+			fmt.Println(msg,"0")
+		}else {
+			fmt.Println(msg, string(buf))
+		}
+	}
+
+	return err
+}
+
 func (r *ResctrlFs) BindTasktoGroup(
 	pid int,
 	group string) error {
@@ -280,7 +302,7 @@ func (r *ResctrlFs) SetCacheSettoGroup(
 		fmt.Println("Error in open schemata file: ", err.Error())
 		return err
 	}
-	// TODO: or get the detail error messgae from last_cmd_status
+	// TODO: or get the detail error message from last_cmd_status
 	_, err = fileCPUList.WriteString(strSchemata)
 	if err != nil {
 		fmt.Println("Error in set schemata", err.Error())

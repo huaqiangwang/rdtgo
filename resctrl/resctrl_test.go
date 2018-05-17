@@ -81,6 +81,43 @@ func TestBindTaskToGroup(t *testing.T) {
 	r.DestroyMonGroup(group)
 }
 
+func TestBindTaskToGroupandMoveGroup(t *testing.T) {
+	const group0 = "mon_groups/test1"
+	const group1 = "p0"
+	r, _ := resctrl.NewResctrlFs()
+	pid := os.Getpid()
+	go cacheComsumer(5*1024, r)
+
+	if err := r.CreateMONGroup(group0); !err {
+		t.Error("Failed in create ", group0)
+		return
+	}
+	r.BindTasktoGroup(pid, group0)
+	if err := r.DumpFileContentInt(group0, "tasks", "Dump " + group0+ "/tasks: ");
+		err != nil {
+		t.Error("Error in dump file content")
+		return
+	}
+
+	if err := r.CreateMONGroup(group1); !err {
+		t.Error("Failed in create ", group0)
+		return
+	}
+	r.BindTasktoGroup(pid, group1)
+	if err := r.DumpFileContentInt(group0, "tasks","Dump " + group0+ "/tasks: ");
+		err != nil {
+		t.Error("Error in dump file content")
+		return
+	}
+	if err := r.DumpFileContentInt(group1, "tasks","Dump " + group1+ "/tasks: ");
+			err != nil {
+		t.Error("Error in dump file content")
+		return
+	}
+
+	time.Sleep(1 * time.Second)
+}
+
 func TestResctrlFs_CacheInfo(t *testing.T) {
 	r, _ := resctrl.NewResctrlFs()
 	r.CacheInfo()

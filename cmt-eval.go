@@ -1,49 +1,48 @@
 package main
 
 import (
-	"fmt"
 	"flag"
+	"fmt"
+	"github.com/shirou/gopsutil/process"
 	"os"
 	"time"
-	"github.com/shirou/gopsutil/process"
-	)
+)
 
-func init(){
-	
+func init() {
+
 }
 
-func welcomme(){
+func welcomme() {
 	fmt.Println()
-	fmt.Println("    Go scripts for evaluating Intel RDT(CMT,MBM)");
+	fmt.Println("    Go scripts for evaluating Intel RDT(CMT,MBM)")
 	fmt.Println()
 }
 
 // a workload for testing, merely do adding operation
-func workload_counting(){
+func workload_counting() {
 	var result int
 	result = 0
-	for ;;{
+	for {
 		result = result + 1
 	}
 }
 
 // Show current CPU id
-func show_current_pid(){
-	for ;; {
+func show_current_pid() {
+	for {
 		pid := os.Getpid()
 		fmt.Println("    - PID: ", pid)
-		pInstance, _:= process.NewProcess(int32(pid))
-/*
-		if err {
-			fmt.Println(err)
-			continue
-		}
-*/
-		percent, _ :=pInstance.CPUPercent()
+		pInstance, _ := process.NewProcess(int32(pid))
+		/*
+			if err {
+				fmt.Println(err)
+				continue
+			}
+		*/
+		percent, _ := pInstance.CPUPercent()
 		fmt.Println("Current CPU id\n", percent)
-		
-		
-		time.Sleep(1*time.Second)
+
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -53,16 +52,16 @@ func show_current_pid(){
 // - Set CPU mask
 // TO check:
 // 	* Effection for CPU binding and not binding
-func cmt_mornitoring_start(){
+func cmt_mornitoring_start() {
 
 }
 
-// - CMT monitoring - 
+// - CMT monitoring -
 // only called after a successul invocation of cmt_mornitoring_start
-func cmt_monitoring(){
+func cmt_monitoring() {
 }
 
-func main(){
+func main() {
 	flag.Parse()
 
 	if flag.NArg() == 0 {
@@ -71,14 +70,13 @@ func main(){
 
 	// kick off an workload
 	go workload_counting()
-	
+
 	// kick off cmt mornitoring thread
 	go cmt_monitoring()
 
 	go show_current_pid()
 
-	time.Sleep(100*time.Second)
-	
+	time.Sleep(100 * time.Second)
+
 	fmt.Println("Main thread existed")
 }
-
