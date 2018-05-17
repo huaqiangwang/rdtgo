@@ -34,6 +34,21 @@ void cacheLoop(unsigned long pl, int size){
 		*(pc+i) = (char)i;
 	}
 }
+
+void _getCPUID(long catalog, long rev,
+		long * a, long *b, long *c, long* d){
+        __asm__ __volatile__("cpuid"
+        :"=a"(*a),"=b"(*b),"=c"(*c),"=d"(*d)
+        :"a"(catalog),"c"(rev));
+}
+
+void getCPUID(long catalog, long rev){
+	long a,b,c,d;
+	_getCPUID(catalog, rev, &a,&b,&c,&d);
+	printf("CPUID[0x%x Rev%d] = 0x%016lx - %016lx - %016lx - %016lx \n",
+	catalog, rev, a,b,c,d);
+}
+
 */
 import "C"
 
@@ -310,3 +325,16 @@ func (r *ResctrlFs) SetCacheSettoGroup(
 	fileCPUList.Close()
 	return err
 }
+
+func (r *ResctrlFs) GetRDTCPUIDInfo(){
+	fmt.Println("RDT Allocation related CPUID info.")
+	C.getCPUID(C.long(0x10), C.long(0))
+	C.getCPUID(C.long(0x10), C.long(1))
+	C.getCPUID(C.long(0x10), C.long(2))
+	C.getCPUID(C.long(0x10), C.long(3))
+
+	fmt.Println("RDT Monitoring related CPUID info.")
+	C.getCPUID(C.long(0xf), C.long(0))
+	C.getCPUID(C.long(0xf), C.long(1))
+}
+

@@ -9,8 +9,10 @@ import (
 )
 
 func TestWkldResourceAllocate(t *testing.T) {
+
 	t.Log("Step1 - Allocating a specified size cache, size = 1M")
 	r, _ := resctrl.NewResctrlFs()
+	r.GetRDTCPUIDInfo()
 	addr := r.WkldAllocaCache(1024 * 1024)
 	t.Log("   - Got allocated address ", addr)
 	if addr == 0 {
@@ -73,11 +75,18 @@ func TestBindTaskToGroup(t *testing.T) {
 		pid := os.Getpid()
 		r.BindTasktoGroup(pid, group)
 		r.BindCPUtoGroup(4, 8, group)
+/*
+		if err := r.DumpFileContentInt(group, "tasks","Dump " + group+ "/tasks: ");
+			 err != nil {
+				 t.Error("Error in dump file content")
+					 return
+			 }
+*/
 
 		go cacheComsumer(5*1024, r)
 		go dumpCacheOccupency(group, r)
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(15 * time.Second)
 	r.DestroyMonGroup(group)
 }
 
@@ -93,6 +102,7 @@ func TestBindTaskToGroupandMoveGroup(t *testing.T) {
 		return
 	}
 	r.BindTasktoGroup(pid, group0)
+		r.BindCPUtoGroup(4, 8, group0)
 	if err := r.DumpFileContentInt(group0, "tasks", "Dump " + group0+ "/tasks: ");
 		err != nil {
 		t.Error("Error in dump file content")
@@ -104,6 +114,8 @@ func TestBindTaskToGroupandMoveGroup(t *testing.T) {
 		return
 	}
 	r.BindTasktoGroup(pid, group1)
+		r.BindCPUtoGroup(4, 8, group1)
+	go dumpCacheOccupency(group1, r)
 	if err := r.DumpFileContentInt(group0, "tasks","Dump " + group0+ "/tasks: ");
 		err != nil {
 		t.Error("Error in dump file content")
@@ -115,7 +127,7 @@ func TestBindTaskToGroupandMoveGroup(t *testing.T) {
 		return
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(10000 * time.Second)
 }
 
 func TestResctrlFs_CacheInfo(t *testing.T) {
